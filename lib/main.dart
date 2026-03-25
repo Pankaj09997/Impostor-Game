@@ -1,5 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:impostorgame/Pages/HomePage.dart';
 import 'package:impostorgame/Pages/SplashScreen.dart';
 
 void main() {
@@ -11,6 +11,9 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: SplashScreen());
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: SplashScreen(NextScreen: Homepage()),
+    );
   }
 }
