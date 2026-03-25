@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:impostorgame/Pages/CodePage.dart';
+import 'package:impostorgame/Pages/GameCountDown.dart';
 
 class RoomPage extends StatefulWidget {
-  const RoomPage({super.key});
+  final String? roomId;
+  const RoomPage({super.key, this.roomId});
 
   @override
   State<RoomPage> createState() => _RoomPageState();
@@ -11,7 +12,7 @@ class RoomPage extends StatefulWidget {
 
 class _RoomPageState extends State<RoomPage>
     with SingleTickerProviderStateMixin {
-  String? joiningCode = "ABC123";
+  // String? joiningCode = "ABC123";
   List<String>? joinedPlayers = ["Alice", "Bob", "Charlie"];
   late Animation<double> buttonAnimation;
   late AnimationController animationController;
@@ -83,7 +84,7 @@ class _RoomPageState extends State<RoomPage>
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    joiningCode ?? "------",
+                    widget.roomId ?? "------",
                     style: GoogleFonts.fredoka(
                       color: Colors.white,
                       fontSize: 36,
@@ -200,7 +201,7 @@ class _RoomPageState extends State<RoomPage>
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, _, _) => CodePage(),
+                    pageBuilder: (context, _, _) => GameCountDown(),
                     transitionsBuilder: (_, animation, _, child) {
                       return SlideTransition(
                         position: Tween(begin: Offset(1, 0), end: Offset.zero)

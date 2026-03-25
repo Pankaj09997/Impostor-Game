@@ -1,3 +1,6 @@
+import 'dart:math';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -17,6 +20,28 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   late AnimationController _imageController;
   late Animation<double> _buttonAnimation;
   late AnimationController _buttonController;
+  bool _isCreatingRoom = false;
+  String createRoomId() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    Random random = Random();
+    return String.fromCharCodes(
+      Iterable.generate(
+        6,
+        (_) => chars.codeUnitAt(random.nextInt(chars.length)),
+      ),
+    );
+  }
+
+  Future<String> saveRoomId() async {
+    final roomId = createRoomId();
+    await FirebaseFirestore.instance.collection('rooms').doc(roomId).set({
+      'roomId': roomId,
+      'players': [],
+      'status': 'waiting',
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+    return roomId;
+  }
 
   @override
   void initState() {
@@ -46,8 +71,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
   }
 
   void _startAnimation() async {
-    await _imageController.repeat(reverse: true);
-    await _buttonController.repeat(reverse: true);
+    _imageController.repeat(reverse: true);
+    _buttonController.repeat(reverse: true);
   }
 
   @override
@@ -97,26 +122,53 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
               return Transform.scale(scale: scale, child: child);
             },
             child: GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  PageRouteBuilder(
-                    pageBuilder: (context, _, _) => RoomPage(),
-                    transitionsBuilder: (_, animation, _, child) {
-                      return SlideTransition(
-                        position: Tween(begin: Offset(1, 0), end: Offset.zero)
-                            .animate(
-                              CurvedAnimation(
-                                parent: animation,
-                                curve: Curves.easeOutCubic,
-                              ),
+              onTap: _isCreatingRoom
+                  ? null
+                  : () async {
+                      setState(() => _isCreatingRoom = true);
+                      try {
+                        final roomId = await saveRoomId();
+                        if (!mounted) return;
+                        Navigator.push(
+                          context,
+                          PageRouteBuilder(
+                            pageBuilder: (context, _, __) =>
+                                RoomPage(roomId: roomId),
+                            transitionsBuilder: (_, animation, __, child) {
+                              return SlideTransition(
+                                position:
+                                    Tween(
+                                      begin: Offset(1, 0),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOutCubic,
+                                      ),
+                                    ),
+                                child: FadeTransition(
+                                  opacity: animation,
+                                  child: child,
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                      } catch (e) {
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              "Couldn't create room 😬 Try again",
+                              style: GoogleFonts.fredoka(),
                             ),
-                        child: FadeTransition(opacity: animation, child: child),
-                      );
+                            backgroundColor: Colors.yellow.shade700,
+                          ),
+                        );
+                      } finally {
+                        if (mounted) setState(() => _isCreatingRoom = false);
+                      }
                     },
-                  ),
-                );
-              },
               child: Container(
                 padding: EdgeInsets.symmetric(vertical: 18, horizontal: 50),
                 decoration: BoxDecoration(
@@ -154,8 +206,8 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                 Navigator.push(
                   context,
                   PageRouteBuilder(
-                    pageBuilder: (context, _, _) => CodePage(),
-                    transitionsBuilder: (_, animation, _, child) {
+                    pageBuilder: (context, _, __) => CodePage(),
+                    transitionsBuilder: (_, animation, __, child) {
                       return SlideTransition(
                         position: Tween(begin: Offset(1, 0), end: Offset.zero)
                             .animate(

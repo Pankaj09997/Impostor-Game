@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:impostorgame/Pages/InputFormatters/TextFormatters.dart';
 import 'package:impostorgame/Pages/WaitingLobby.dart';
 
 class CodePage extends StatefulWidget {
@@ -16,6 +18,7 @@ class _CodePageState extends State<CodePage>
   late Animation<double> _buttonAnimation;
   late AnimationController _buttonController;
   final _formKey = GlobalKey<FormState>();
+
   @override
   void initState() {
     // TODO: implement initState
@@ -41,12 +44,15 @@ class _CodePageState extends State<CodePage>
     await _buttonController.repeat(reverse: true);
   }
 
+  Future<void> checkAvailableRoom() async {}
+
   Widget codeInput() {
     return Column(
       children: [
         TextFormField(
           controller: _codeController,
           textAlign: TextAlign.center,
+          inputFormatters: [UpperCaseTextFormatter()],
           maxLength: 6,
           validator: (value) {
             if (value == null || value.isEmpty) return "no_code";
@@ -181,32 +187,50 @@ class _CodePageState extends State<CodePage>
                 return Transform.scale(scale: scale, child: child);
               },
               child: GestureDetector(
-                onTap: () {
+                onTap: () async {
                   if (_formKey.currentState!.validate()) {
-                    Navigator.push(
-                      context,
-                      PageRouteBuilder(
-                        pageBuilder: (context, _, __) => WaitingLobby(),
-                        transitionsBuilder: (_, animation, __, child) {
-                          return SlideTransition(
-                            position:
-                                Tween(
-                                  begin: Offset(1, 0),
-                                  end: Offset.zero,
-                                ).animate(
-                                  CurvedAnimation(
-                                    parent: animation,
-                                    curve: Curves.easeOutCubic,
+                    final code = _codeController.text.trim();
+                    final doc = await FirebaseFirestore.instance
+                        .collection('rooms')
+                        .doc(code)
+                        .get();
+                    if (!mounted) return;
+                    if (doc.exists) {
+                      Navigator.push(
+                        context,
+                        PageRouteBuilder(
+                          pageBuilder: (context, _, __) => WaitingLobby(),
+                          transitionsBuilder: (_, animation, __, child) {
+                            return SlideTransition(
+                              position:
+                                  Tween(
+                                    begin: Offset(1, 0),
+                                    end: Offset.zero,
+                                  ).animate(
+                                    CurvedAnimation(
+                                      parent: animation,
+                                      curve: Curves.easeOutCubic,
+                                    ),
                                   ),
-                                ),
-                            child: FadeTransition(
-                              opacity: animation,
-                              child: child,
-                            ),
-                          );
-                        },
-                      ),
-                    );
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            "Room not found 👀",
+                            style: GoogleFonts.fredoka(),
+                          ),
+                          backgroundColor: Colors.yellow.shade700,
+                        ),
+                      );
+                    }
                   }
                 },
                 child: Container(

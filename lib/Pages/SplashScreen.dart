@@ -42,7 +42,6 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    // Slide in from left
     _slideController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 750),
@@ -52,7 +51,6 @@ class _SplashScreenState extends State<SplashScreen>
           CurvedAnimation(parent: _slideController, curve: Curves.easeOutCubic),
         );
 
-    // Elastic bounce after slide
     _bounceController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
@@ -81,7 +79,6 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     ]).animate(_bounceController);
 
-    // Gentle float up/down loop
     _floatController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2800),
@@ -90,7 +87,6 @@ class _SplashScreenState extends State<SplashScreen>
       CurvedAnimation(parent: _floatController, curve: Curves.easeInOut),
     );
 
-    // Text fade + slide up
     _textController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
@@ -122,7 +118,6 @@ class _SplashScreenState extends State<SplashScreen>
           ),
         );
 
-    // Full screen fade out
     _exitController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
@@ -217,7 +212,6 @@ class _SplashScreenState extends State<SplashScreen>
               Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // ── Pig — no box, floats directly on gradient ──
                   SlideTransition(
                     position: _slideAnimation,
                     child: ScaleTransition(
@@ -225,7 +219,6 @@ class _SplashScreenState extends State<SplashScreen>
                       child: AnimatedBuilder(
                         animation: _floatAnimation,
                         builder: (context, child) {
-                          // subtle float: moves up 10px and back
                           return Transform.translate(
                             offset: Offset(0, -10 * _floatAnimation.value),
                             child: child,
@@ -241,8 +234,6 @@ class _SplashScreenState extends State<SplashScreen>
                   ),
 
                   const SizedBox(height: 28),
-
-                  // ── Title ──
                   SlideTransition(
                     position: _textSlide,
                     child: FadeTransition(
