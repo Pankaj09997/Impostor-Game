@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:impostorgame/Pages/CodePage.dart';
+import 'package:impostorgame/Pages/NamePage.dart';
 import 'package:impostorgame/Pages/RoomPage.dart';
 
 class Homepage extends StatefulWidget {
@@ -133,7 +134,7 @@ class _HomepageState extends State<Homepage> with TickerProviderStateMixin {
                           context,
                           PageRouteBuilder(
                             pageBuilder: (context, _, __) =>
-                                RoomPage(roomId: roomId),
+                                NamePage(roomId: roomId, isAdmin: true),
                             transitionsBuilder: (_, animation, __, child) {
                               return SlideTransition(
                                 position:

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:impostorgame/Pages/InputFormatters/TextFormatters.dart';
+import 'package:impostorgame/Pages/NamePage.dart';
 import 'package:impostorgame/Pages/WaitingLobby.dart';
 
 class CodePage extends StatefulWidget {
@@ -199,7 +200,8 @@ class _CodePageState extends State<CodePage>
                       Navigator.push(
                         context,
                         PageRouteBuilder(
-                          pageBuilder: (context, _, __) => WaitingLobby(),
+                          pageBuilder: (context, _, __) =>
+                              NamePage(roomId: code, isAdmin: false),
                           transitionsBuilder: (_, animation, __, child) {
                             return SlideTransition(
                               position:
