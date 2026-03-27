@@ -38,6 +38,7 @@ dependencies:
   flutter_svg: ^2.2.4
   firebase_core: ^4.6.0
   cloud_firestore: ^6.2.0
+  scratcher: ^2.5.0
 
 dev_dependencies:
   flutter_test:
