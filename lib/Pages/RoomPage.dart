@@ -1,10 +1,11 @@
 import 'dart:async';
-import 'dart:nativewrappers/_internal/vm/lib/math_patch.dart';
+import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:impostorgame/Pages/GameCountDown.dart';
+import 'package:impostorgame/Words/words.dart';
 
 class RoomPage extends StatefulWidget {
   final String? roomId;
@@ -25,6 +26,7 @@ class _RoomPageState extends State<RoomPage>
   late final AppLifecycleListener appLifecycleListener;
   String? getHostName;
   bool hasStartButtonClicked = false;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -82,11 +84,17 @@ class _RoomPageState extends State<RoomPage>
             });
 
             final status = snapshot['status'];
-            if (status == 'ready') {
+
+            if (status == 'ready' && !_hasNavigated) {
+              _hasNavigated = true;
+              _roomSubscription?.cancel();
               Navigator.push(
                 context,
                 PageRouteBuilder(
-                  pageBuilder: (context, _, __) => GameCountDown(),
+                  pageBuilder: (context, _, __) => GameCountDown(
+                    playerName: widget.playerName!,
+                    roomId: widget.roomId!,
+                  ),
                   transitionsBuilder: (_, animation, __, child) {
                     return FadeTransition(opacity: animation, child: child);
                   },
@@ -155,10 +163,32 @@ class _RoomPageState extends State<RoomPage>
 
   Future<void> startGame() async {
     if (joinedPlayers.length < 4) return;
-    final impostorName = await FirebaseFirestore.instance
+    _hasNavigated = false;
+    final random = Random();
+    final impostorName = joinedPlayers[random.nextInt(joinedPlayers.length)];
+
+    final categories = words.keys.toList();
+
+    final category = categories[random.nextInt(categories.length)];
+
+    final wordList = words[category]!;
+
+    final wordPair = wordList[random.nextInt(wordList.length)];
+    await FirebaseFirestore.instance
         .collection('rooms')
         .doc(widget.roomId)
-        .update({'status': 'ready'});
+        .update({
+          'impostorName': impostorName,
+          'crewmateWord': wordPair['crewmate'],
+          'crewmateWordMeaning': wordPair['crewmateMeaning'],
+          'impostorWord': wordPair['impostor'],
+          'impostorWordMeaning': wordPair['impostorMeaning'],
+          'category': category,
+          'votes': {},
+          'result': null,
+          'accused': null,
+          'status': 'ready',
+        });
   }
 
   @override

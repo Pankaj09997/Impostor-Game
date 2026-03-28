@@ -39,6 +39,8 @@ dependencies:
   firebase_core: ^4.6.0
   cloud_firestore: ^6.2.0
   scratcher: ^2.5.0
+  double_tap_to_exit: ^1.0.3
+  badges: ^3.1.2
 
 dev_dependencies:
   flutter_test:

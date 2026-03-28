@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -20,10 +22,13 @@ class _NamePageState extends State<NamePage>
   late AnimationController _buttonController;
   final _formKey = GlobalKey<FormState>();
   bool _isJoining = false;
+  bool _isReady = false;
+  late StreamSubscription? _subscribtion;
 
   @override
   void initState() {
     super.initState();
+    checkGameStatus();
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -38,6 +43,24 @@ class _NamePageState extends State<NamePage>
       CurvedAnimation(parent: _buttonController, curve: Curves.easeInOut),
     );
     _buttonController.repeat(reverse: true);
+  }
+
+  Future<void> checkGameStatus() async {
+    _subscribtion = FirebaseFirestore.instance
+        .collection('rooms')
+        .doc(widget.roomId)
+        .snapshots()
+        .listen((snapshot) {
+          if (snapshot['status'] == 'ready') {
+            setState(() {
+              _isReady = true;
+            });
+          } else {
+            setState(() {
+              _isReady = false;
+            });
+          }
+        });
   }
 
   Widget _nameInput() {
@@ -137,6 +160,7 @@ class _NamePageState extends State<NamePage>
 
   @override
   void dispose() {
+    _subscribtion?.cancel();
     _buttonController.dispose();
     _nameController.dispose();
     super.dispose();
@@ -251,44 +275,55 @@ class _NamePageState extends State<NamePage>
                               );
                               return;
                             }
-
-                            await FirebaseFirestore.instance
-                                .collection('rooms')
-                                .doc(widget.roomId)
-                                .update({
-                                  'players': FieldValue.arrayUnion([name]),
-                                });
+                            if (!_isReady) {
+                              await FirebaseFirestore.instance
+                                  .collection('rooms')
+                                  .doc(widget.roomId)
+                                  .update({
+                                    'players': FieldValue.arrayUnion([name]),
+                                  });
+                            }
 
                             if (!mounted) return;
-
-                            Navigator.pushReplacement(
-                              context,
-                              PageRouteBuilder(
-                                pageBuilder: (context, _, __) => RoomPage(
-                                  roomId: widget.roomId,
-                                  isAdmin: widget.isAdmin,
-                                  playerName: name,
-                                ),
-                                transitionsBuilder: (_, animation, __, child) {
-                                  return SlideTransition(
-                                    position:
-                                        Tween(
-                                          begin: const Offset(1, 0),
-                                          end: Offset.zero,
-                                        ).animate(
-                                          CurvedAnimation(
-                                            parent: animation,
-                                            curve: Curves.easeOutCubic,
+                            if (!_isReady) {
+                              Navigator.pushReplacement(
+                                context,
+                                PageRouteBuilder(
+                                  pageBuilder: (context, _, __) => RoomPage(
+                                    roomId: widget.roomId,
+                                    isAdmin: widget.isAdmin,
+                                    playerName: name,
+                                  ),
+                                  transitionsBuilder:
+                                      (_, animation, __, child) {
+                                        return SlideTransition(
+                                          position:
+                                              Tween(
+                                                begin: const Offset(1, 0),
+                                                end: Offset.zero,
+                                              ).animate(
+                                                CurvedAnimation(
+                                                  parent: animation,
+                                                  curve: Curves.easeOutCubic,
+                                                ),
+                                              ),
+                                          child: FadeTransition(
+                                            opacity: animation,
+                                            child: child,
                                           ),
-                                        ),
-                                    child: FadeTransition(
-                                      opacity: animation,
-                                      child: child,
-                                    ),
-                                  );
-                                },
-                              ),
-                            );
+                                        );
+                                      },
+                                ),
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    "Sorry the game has already started",
+                                  ),
+                                ),
+                              );
+                            }
                           } catch (e) {
                             if (!mounted) return;
                             ScaffoldMessenger.of(context).showSnackBar(

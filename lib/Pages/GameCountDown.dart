@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:impostorgame/Pages/GameFinalPageSplash.dart';
+import 'package:impostorgame/Pages/GamePage.dart';
 
 class GameCountDown extends StatefulWidget {
-  const GameCountDown({super.key});
+  final String playerName;
+  final String roomId;
+  const GameCountDown({
+    super.key,
+    required this.playerName,
+    required this.roomId,
+  });
 
   @override
   State<GameCountDown> createState() => _GameCountDownState();
@@ -85,13 +91,15 @@ class _GameCountDownState extends State<GameCountDown>
       if (count > 0) {
         _startCountdown();
       } else {
-        // Small delay so "GO!" is visible before navigating
         Future.delayed(const Duration(milliseconds: 600), () {
           if (!mounted) return;
           Navigator.pushReplacement(
             context,
             PageRouteBuilder(
-              pageBuilder: (context, _, __) => GameFinalSplashScreen(),
+              pageBuilder: (context, _, __) => GamePage(
+                playerName: widget.playerName,
+                roomId: widget.roomId,
+              ),
               transitionDuration: Duration.zero,
             ),
           );
