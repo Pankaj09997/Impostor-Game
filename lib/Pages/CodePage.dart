@@ -18,8 +18,13 @@ class _CodePageState extends State<CodePage>
   final _formKey = GlobalKey<FormState>();
   bool _isJoining = false;
 
-  late AnimationController _fadeInController;
-  late Animation<double> _fadeInAnimation;
+  late AnimationController _entryController;
+  late Animation<double> _titleFade;
+  late Animation<Offset> _titleSlide;
+  late Animation<double> _inputFade;
+  late Animation<Offset> _inputSlide;
+  late Animation<double> _btnFade;
+  late Animation<Offset> _btnSlide;
 
   @override
   void initState() {
@@ -31,20 +36,59 @@ class _CodePageState extends State<CodePage>
       ),
     );
 
-    _fadeInController = AnimationController(
+    _entryController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: const Duration(milliseconds: 900),
     );
-    _fadeInAnimation = CurvedAnimation(
-      parent: _fadeInController,
-      curve: Curves.easeOut,
+
+    _titleFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _entryController,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+      ),
     );
-    _fadeInController.forward();
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entryController,
+            curve: const Interval(0.0, 0.5, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _inputFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _entryController,
+        curve: const Interval(0.3, 0.7, curve: Curves.easeOut),
+      ),
+    );
+    _inputSlide = Tween<Offset>(begin: const Offset(0, 0.3), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entryController,
+            curve: const Interval(0.3, 0.7, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _btnFade = Tween<double>(begin: 0, end: 1).animate(
+      CurvedAnimation(
+        parent: _entryController,
+        curve: const Interval(0.55, 1.0, curve: Curves.easeOut),
+      ),
+    );
+    _btnSlide = Tween<Offset>(begin: const Offset(0, 0.4), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _entryController,
+            curve: const Interval(0.55, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
+
+    _entryController.forward();
   }
 
   @override
   void dispose() {
-    _fadeInController.dispose();
+    _entryController.dispose();
     _codeController.dispose();
     super.dispose();
   }
@@ -86,9 +130,9 @@ class _CodePageState extends State<CodePage>
           SnackBar(
             content: Text(
               "Room not found 👀  Double-check the code.",
-              style: GoogleFonts.spaceGrotesk(),
+              style: GoogleFonts.fredoka(fontSize: 16),
             ),
-            backgroundColor: const Color(0xFFE53935),
+            backgroundColor: const Color(0xFF7F0000),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
@@ -104,317 +148,279 @@ class _CodePageState extends State<CodePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
-      body: Stack(
-        children: [
-          // ── Atmospheric glow ──
-          Positioned(
-            top: -100,
-            right: -60,
-            child: Container(
-              width: 300,
-              height: 300,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    const Color(0xFFE53935).withOpacity(0.18),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: Text(
+          "JOIN THE ROOM",
+          style: GoogleFonts.fredoka(
+            color: Colors.white,
+            fontSize: 20,
+            letterSpacing: 3,
+            fontWeight: FontWeight.w600,
           ),
-
-          // ── Grid ──
-          CustomPaint(
-            size: Size(
-              MediaQuery.of(context).size.width,
-              MediaQuery.of(context).size.height,
-            ),
-            painter: _GridPainter(),
+        ),
+      ),
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color.fromARGB(255, 239, 114, 114),
+              Color.fromARGB(255, 229, 53, 47),
+              Color.fromARGB(255, 170, 10, 10),
+            ],
           ),
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 120),
 
-          FadeTransition(
-            opacity: _fadeInAnimation,
-            child: SafeArea(
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ── Back + Title ──
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () => Navigator.pop(context),
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.07),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.white12),
-                              ),
-                              child: const Icon(
-                                Icons.arrow_back_ios_new_rounded,
-                                color: Colors.white70,
-                                size: 16,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Text(
-                            "JOIN THE ROOM",
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white,
-                              fontSize: 14,
-                              letterSpacing: 4,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 48),
-
-                    // ── Headline ──
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 28),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "ENTER\nTHE CODE.",
-                            style: GoogleFonts.bebasNeue(
-                              color: Colors.white,
-                              fontSize: 56,
-                              height: 1.05,
-                              letterSpacing: 3,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "Get the 6-character code from your host.",
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white38,
-                              fontSize: 13,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    // ── Code input ──
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 28),
-                      child: Column(
-                        children: [
-                          TextFormField(
-                            controller: _codeController,
-                            textAlign: TextAlign.center,
-                            inputFormatters: [UpperCaseTextFormatter()],
-                            maxLength: 6,
-                            validator: (value) {
-                              if (value == null || value.isEmpty)
-                                return "no_code";
-                              if (value.length < 6) return "short_code";
-                              return null;
-                            },
-                            autovalidateMode:
-                                AutovalidateMode.onUserInteraction,
-                            style: GoogleFonts.spaceGrotesk(
-                              fontSize: 30,
-                              letterSpacing: 16,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                            ),
-                            decoration: InputDecoration(
-                              counterText: "",
-                              filled: true,
-                              fillColor: Colors.white.withOpacity(0.06),
-                              hintText: "• • • • • •",
-                              hintStyle: GoogleFonts.spaceGrotesk(
-                                letterSpacing: 12,
-                                color: Colors.white24,
-                                fontSize: 22,
-                              ),
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: BorderSide.none,
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: const BorderSide(
-                                  color: Colors.white12,
-                                  width: 1.5,
-                                ),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE53935),
-                                  width: 2,
-                                ),
-                              ),
-                              errorBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE53935),
-                                  width: 2,
-                                ),
-                              ),
-                              focusedErrorBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(20),
-                                borderSide: const BorderSide(
-                                  color: Color(0xFFE53935),
-                                  width: 2,
-                                ),
-                              ),
-                              errorStyle: const TextStyle(
-                                height: 0,
-                                fontSize: 0,
-                              ),
-                            ),
-                          ),
-
-                          // ── Inline error ──
-                          ValueListenableBuilder<TextEditingValue>(
-                            valueListenable: _codeController,
-                            builder: (context, value, _) {
-                              final showError =
-                                  value.text.isNotEmpty &&
-                                  value.text.length < 6;
-                              return AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 250),
-                                child: showError
-                                    ? Padding(
-                                        key: const ValueKey('err'),
-                                        padding: const EdgeInsets.only(top: 12),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            const Icon(
-                                              Icons.info_outline_rounded,
-                                              color: Color(0xFFE53935),
-                                              size: 14,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              "Code must be 6 characters",
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: const Color(0xFFE53935),
-                                                fontSize: 13,
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      )
-                                    : const SizedBox.shrink(
-                                        key: ValueKey('ok'),
-                                      ),
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const Spacer(),
-
-                    // ── Join button ──
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(28, 0, 28, 40),
-                      child: GestureDetector(
-                        onTap: _isJoining ? null : _joinRoom,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                          decoration: BoxDecoration(
-                            color: _isJoining
-                                ? const Color(0xFFE53935).withOpacity(0.6)
-                                : const Color(0xFFE53935),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFE53935).withOpacity(0.4),
-                                blurRadius: 24,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              if (_isJoining)
-                                const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              else
-                                const Icon(
-                                  Icons.login_rounded,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
-                              const SizedBox(width: 10),
-                              Text(
-                                _isJoining ? "JOINING..." : "JOIN ROOM",
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 2.5,
-                                ),
+              FadeTransition(
+                opacity: _titleFade,
+                child: SlideTransition(
+                  position: _titleSlide,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Enter\nthe Code.",
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white,
+                            fontSize: 52,
+                            height: 1.1,
+                            fontWeight: FontWeight.w500,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
                               ),
                             ],
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Get the 6-character code from your host.",
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white.withOpacity(0.65),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+
+              const SizedBox(height: 40),
+
+              // ── Code input ──
+              FadeTransition(
+                opacity: _inputFade,
+                child: SlideTransition(
+                  position: _inputSlide,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: Column(
+                      children: [
+                        TextFormField(
+                          controller: _codeController,
+                          textAlign: TextAlign.center,
+                          inputFormatters: [UpperCaseTextFormatter()],
+                          maxLength: 6,
+                          validator: (value) {
+                            if (value == null || value.isEmpty)
+                              return "no_code";
+                            if (value.length < 6) return "short_code";
+                            return null;
+                          },
+                          autovalidateMode: AutovalidateMode.onUserInteraction,
+                          style: GoogleFonts.fredoka(
+                            fontSize: 32,
+                            letterSpacing: 14,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          decoration: InputDecoration(
+                            counterText: "",
+                            filled: true,
+                            fillColor: Colors.white.withOpacity(0.18),
+                            hintText: "• • • • • •",
+                            hintStyle: GoogleFonts.fredoka(
+                              letterSpacing: 12,
+                              color: Colors.white38,
+                              fontSize: 24,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: BorderSide(
+                                color: Colors.white.withOpacity(0.3),
+                                width: 1.5,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: const BorderSide(
+                                color: Colors.white,
+                                width: 2.5,
+                              ),
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: BorderSide(
+                                color: Colors.yellow.shade700,
+                                width: 2,
+                              ),
+                            ),
+                            focusedErrorBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              borderSide: BorderSide(
+                                color: Colors.yellow.shade700,
+                                width: 2,
+                              ),
+                            ),
+                            errorStyle: const TextStyle(height: 0, fontSize: 0),
+                          ),
+                        ),
+
+                        // ── Inline error ──
+                        ValueListenableBuilder<TextEditingValue>(
+                          valueListenable: _codeController,
+                          builder: (context, value, _) {
+                            final showError =
+                                value.text.isNotEmpty && value.text.length < 6;
+                            return AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 250),
+                              child: showError
+                                  ? Padding(
+                                      key: const ValueKey('err'),
+                                      padding: const EdgeInsets.only(top: 12),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.yellow.shade700,
+                                          borderRadius: BorderRadius.circular(
+                                            30,
+                                          ),
+                                        ),
+                                        child: Text(
+                                          "Code must be 6 characters",
+                                          style: GoogleFonts.fredoka(
+                                            color: Colors.black87,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : const SizedBox.shrink(key: ValueKey('ok')),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const Spacer(),
+
+              // ── Join button ──
+              FadeTransition(
+                opacity: _btnFade,
+                child: SlideTransition(
+                  position: _btnSlide,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(28, 0, 28, 20),
+                    child: Column(
+                      children: [
+                        GestureDetector(
+                          onTap: _isJoining ? null : _joinRoom,
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(vertical: 18),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.25),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (_isJoining)
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Color(0xFFE53935),
+                                    ),
+                                  )
+                                else
+                                  const Text(
+                                    "🚪",
+                                    style: TextStyle(fontSize: 20),
+                                  ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  _isJoining ? "Joining..." : "Join Room",
+                                  style: GoogleFonts.fredoka(
+                                    color: const Color(0xFFE53935),
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 14),
+
+                        Text(
+                          "ask your host for the room code 👀",
+                          style: GoogleFonts.fredoka(
+                            color: Colors.white.withOpacity(0.45),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
-}
-
-// ── Grid background painter ───────────────────────────────────────────────────
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.03)
-      ..strokeWidth = 1;
-
-    const spacing = 40.0;
-    for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
 }

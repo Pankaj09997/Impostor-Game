@@ -7,6 +7,57 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:impostorgame/Pages/GameCountDown.dart';
 import 'package:impostorgame/Words/words.dart';
 
+const _kGradient = LinearGradient(
+  begin: Alignment.topLeft,
+  end: Alignment.bottomRight,
+  colors: [
+    Color.fromARGB(255, 239, 114, 114),
+    Color.fromARGB(255, 229, 53, 47),
+    Color.fromARGB(255, 170, 10, 10),
+  ],
+);
+
+const _kTint = Color(0xFFFFE0E0);
+const _kAccent = Color(0xFFE53535);
+
+class _GradBox extends StatelessWidget {
+  final Widget child;
+  final BorderRadius borderRadius;
+  final EdgeInsetsGeometry? padding;
+  final List<BoxShadow>? boxShadow;
+  const _GradBox({
+    required this.child,
+    required this.borderRadius,
+    this.padding,
+    this.boxShadow,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: padding,
+    decoration: BoxDecoration(
+      gradient: _kGradient,
+      borderRadius: borderRadius,
+      boxShadow: boxShadow,
+    ),
+    child: child,
+  );
+}
+
+class _GradText extends StatelessWidget {
+  final String text;
+  final TextStyle style;
+  const _GradText(this.text, {required this.style});
+
+  @override
+  Widget build(BuildContext context) => ShaderMask(
+    shaderCallback: (b) =>
+        _kGradient.createShader(Rect.fromLTWH(0, 0, b.width, b.height)),
+    blendMode: BlendMode.srcIn,
+    child: Text(text, style: style.copyWith(color: Colors.white)),
+  );
+}
+
 class RoomPage extends StatefulWidget {
   final String? roomId;
   final bool? isAdmin;
@@ -17,16 +68,41 @@ class RoomPage extends StatefulWidget {
   State<RoomPage> createState() => _RoomPageState();
 }
 
-class _RoomPageState extends State<RoomPage>
-    with SingleTickerProviderStateMixin {
+class _RoomPageState extends State<RoomPage> with TickerProviderStateMixin {
   List<dynamic> joinedPlayers = [];
-  late Animation<double> buttonAnimation;
-  late AnimationController animationController;
+  late AnimationController _pulseController;
+  late AnimationController _dotController;
+  late Animation<double> _pulseAnimation;
+  late Animation<double> _dotAnimation;
   StreamSubscription? _roomSubscription;
   late final AppLifecycleListener appLifecycleListener;
   String? getHostName;
-  bool hasStartButtonClicked = false;
   bool _hasNavigated = false;
+
+  static const List<Color> _avatarBg = [
+    Color(0xFFFFD6D6),
+    Color(0xFFFFE5CC),
+    Color(0xFFD6F0FF),
+    Color(0xFFD6FFE8),
+    Color(0xFFEFD6FF),
+    Color(0xFFFFD6F0),
+    Color(0xFFD6ECFF),
+    Color(0xFFFFF3D6),
+    Color(0xFFD6FFF6),
+    Color(0xFFFFDDD6),
+  ];
+  static const List<Color> _avatarFg = [
+    Color(0xFFB71C1C),
+    Color(0xFFBF360C),
+    Color(0xFF0D47A1),
+    Color(0xFF1B5E20),
+    Color(0xFF4A148C),
+    Color(0xFF880E4F),
+    Color(0xFF006064),
+    Color(0xFFE65100),
+    Color(0xFF004D40),
+    Color(0xFFBF360C),
+  ];
 
   @override
   void initState() {
@@ -34,15 +110,25 @@ class _RoomPageState extends State<RoomPage>
     HostName();
     gethostName();
 
-    animationController = AnimationController(
+    _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 900),
     );
-    buttonAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.0,
-    ).animate(animationController);
-    animationController.repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.04).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    _pulseController.repeat(reverse: true);
+
+    _dotController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
+    _dotAnimation = Tween<double>(
+      begin: 0.3,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _dotController, curve: Curves.easeInOut));
+    _dotController.repeat(reverse: true);
+
     _listenToPlayers();
 
     appLifecycleListener = AppLifecycleListener(
@@ -53,20 +139,14 @@ class _RoomPageState extends State<RoomPage>
             .update({
               'players': FieldValue.arrayRemove([widget.playerName]),
             });
-
         final data = await FirebaseFirestore.instance
             .collection('rooms')
             .doc(widget.roomId)
             .get();
-
         if (!data.exists) return;
-
         final currentHost = data['hostName'];
-        final List<dynamic> remainingPlayers = data['players'] ?? [];
-
-        if (widget.playerName == currentHost) {
-          await changeHost(remainingPlayers);
-        }
+        final List<dynamic> remaining = data['players'] ?? [];
+        if (widget.playerName == currentHost) await changeHost(remaining);
       },
     );
   }
@@ -82,9 +162,7 @@ class _RoomPageState extends State<RoomPage>
               joinedPlayers = snapshot['players'] ?? [];
               getHostName = snapshot['hostName'];
             });
-
             final status = snapshot['status'];
-
             if (status == 'ready' && !_hasNavigated) {
               _hasNavigated = true;
               _roomSubscription?.cancel();
@@ -95,9 +173,8 @@ class _RoomPageState extends State<RoomPage>
                     playerName: widget.playerName!,
                     roomId: widget.roomId!,
                   ),
-                  transitionsBuilder: (_, animation, __, child) {
-                    return FadeTransition(opacity: animation, child: child);
-                  },
+                  transitionsBuilder: (_, animation, __, child) =>
+                      FadeTransition(opacity: animation, child: child),
                 ),
               );
             }
@@ -110,9 +187,7 @@ class _RoomPageState extends State<RoomPage>
         .collection('rooms')
         .doc(widget.roomId)
         .get();
-    setState(() {
-      getHostName = data['hostName'];
-    });
+    setState(() => getHostName = data['hostName']);
   }
 
   Future<void> HostName() async {
@@ -129,19 +204,17 @@ class _RoomPageState extends State<RoomPage>
       final roomRef = FirebaseFirestore.instance
           .collection('rooms')
           .doc(widget.roomId);
-
       final doc = await roomRef.get();
       final hostName = doc['hostName'];
       List players = List.from(doc['players']);
-
       players.remove(widget.playerName);
-
       if (widget.playerName == hostName) {
-        if (players.isNotEmpty) {
-          await roomRef.update({'hostName': players.first, 'players': players});
-        } else {
-          await roomRef.delete();
-        }
+        players.isNotEmpty
+            ? await roomRef.update({
+                'hostName': players.first,
+                'players': players,
+              })
+            : await roomRef.delete();
       } else {
         await roomRef.update({'players': players});
       }
@@ -149,30 +222,40 @@ class _RoomPageState extends State<RoomPage>
     if (mounted) Navigator.pop(context);
   }
 
-  Future<void> changeHost(List<dynamic> remainingPlayers) async {
+  Future<void> changeHost(List<dynamic> remaining) async {
     final roomRef = FirebaseFirestore.instance
         .collection('rooms')
         .doc(widget.roomId);
-
-    if (remainingPlayers.isNotEmpty) {
-      await roomRef.update({'hostName': remainingPlayers.first});
-    } else {
-      await roomRef.delete();
-    }
+    remaining.isNotEmpty
+        ? await roomRef.update({'hostName': remaining.first})
+        : await roomRef.delete();
   }
 
   Future<void> startGame() async {
-    if (joinedPlayers.length < 4) return;
+    if (joinedPlayers.length < 4 || joinedPlayers.length > 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF7F0000),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          content: Text(
+            "Need 4–10 players to start 👀",
+            style: GoogleFonts.fredoka(color: Colors.white, fontSize: 16),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+      return;
+    }
     _hasNavigated = false;
     final random = Random();
     final impostorName = joinedPlayers[random.nextInt(joinedPlayers.length)];
-
     final categories = words.keys.toList();
-
     final category = categories[random.nextInt(categories.length)];
-
     final wordList = words[category]!;
-
     final wordPair = wordList[random.nextInt(wordList.length)];
     await FirebaseFirestore.instance
         .collection('rooms')
@@ -195,12 +278,14 @@ class _RoomPageState extends State<RoomPage>
   void dispose() {
     _roomSubscription?.cancel();
     appLifecycleListener.dispose();
-    animationController.dispose();
+    _pulseController.dispose();
+    _dotController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isHost = getHostName == widget.playerName;
     final size = MediaQuery.of(context).size;
 
     return PopScope(
@@ -210,460 +295,486 @@ class _RoomPageState extends State<RoomPage>
         await _removePlayerAndLeave();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFF0D0D0D),
-        body: Stack(
-          children: [
-            // ── Atmospheric glow top-left ──
-            Positioned(
-              top: -80,
-              left: -60,
-              child: Container(
-                width: 300,
-                height: 300,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFFE53935).withOpacity(0.18),
-                      Colors.transparent,
-                    ],
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+
+          decoration: const BoxDecoration(gradient: _kGradient),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
                   ),
-                ),
-              ),
-            ),
-
-            // ── Atmospheric glow bottom-right ──
-            Positioned(
-              bottom: 40,
-              right: -60,
-              child: Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      const Color(0xFFE53935).withOpacity(0.10),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // ── Grid ──
-            CustomPaint(
-              size: Size(size.width, size.height),
-              painter: _GridPainter(),
-            ),
-
-            // ── Main content ──
-            SafeArea(
-              child: Column(
-                children: [
-                  // ── Custom AppBar ──
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 14,
-                    ),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: _removePlayerAndLeave,
-                          child: Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.07),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.white12),
-                            ),
-                            child: const Icon(
-                              Icons.arrow_back_ios_new_rounded,
-                              color: Colors.white70,
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Text(
-                          "THE CHAMBER",
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white,
-                            fontSize: 14,
-                            letterSpacing: 4,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const Spacer(),
-                        // Live indicator
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
+                  child: Row(
+                    children: [
+                      GestureDetector(
+                        onTap: _removePlayerAndLeave,
+                        child: Container(
+                          width: 42,
+                          height: 42,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.07),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: Colors.white12),
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.4),
+                              width: 1.5,
+                            ),
                           ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 6,
-                                height: 6,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.greenAccent,
+                          child: const Icon(
+                            Icons.arrow_back_ios_new_rounded,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+
+                      const Spacer(),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(30),
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.4),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AnimatedBuilder(
+                              animation: _dotAnimation,
+                              builder: (context, _) => Opacity(
+                                opacity: _dotAnimation.value,
+                                child: Container(
+                                  width: 7,
+                                  height: 7,
+                                  decoration: const BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
-                              const SizedBox(width: 6),
+                            ),
+                            const SizedBox(width: 7),
+                            Text(
+                              "LIVE",
+                              style: GoogleFonts.fredoka(
+                                color: Colors.white,
+                                fontSize: 13,
+                                letterSpacing: 2,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "The Chamber 🕵️",
+                        style: GoogleFonts.fredoka(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 12,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text("🔑", style: TextStyle(fontSize: 16)),
+                            const SizedBox(width: 10),
+                            _GradText(
+                              widget.roomId ?? "------",
+                              style: GoogleFonts.fredoka(
+                                fontSize: 28,
+                                letterSpacing: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                Expanded(
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFF8F8),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(36),
+                        topRight: Radius.circular(36),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 20),
+
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 24),
+                          child: Row(
+                            children: [
                               Text(
-                                "LIVE",
-                                style: GoogleFonts.spaceGrotesk(
-                                  color: Colors.white54,
-                                  fontSize: 11,
-                                  letterSpacing: 2,
-                                  fontWeight: FontWeight.w600,
+                                "Players",
+                                style: GoogleFonts.fredoka(
+                                  color: const Color(0xFF1A1A1A),
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _kTint,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: _GradText(
+                                  "${joinedPlayers.length}/10",
+                                  style: GoogleFonts.fredoka(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                "min 4 to start",
+                                style: GoogleFonts.fredoka(
+                                  color: Colors.black38,
+                                  fontSize: 13,
                                 ),
                               ),
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                  ),
 
-                  const SizedBox(height: 8),
+                        const SizedBox(height: 12),
 
-                  // ── Room Code Card ──
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 20,
-                        horizontal: 24,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: const Color(0xFFE53935).withOpacity(0.3),
-                          width: 1.5,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            "ROOM CODE",
-                            style: GoogleFonts.spaceGrotesk(
-                              color: Colors.white30,
-                              fontSize: 11,
-                              letterSpacing: 4,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            widget.roomId ?? "------",
-                            style: GoogleFonts.bebasNeue(
-                              color: Colors.white,
-                              fontSize: 42,
-                              letterSpacing: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Players header ──
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      children: [
-                        Text(
-                          "PLAYERS",
-                          style: GoogleFonts.spaceGrotesk(
-                            color: Colors.white30,
-                            fontSize: 11,
-                            letterSpacing: 4,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE53935).withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: const Color(0xFFE53935).withOpacity(0.3),
-                            ),
-                          ),
-                          child: Text(
-                            "${joinedPlayers.length}",
-                            style: GoogleFonts.spaceGrotesk(
-                              color: const Color(0xFFE53935),
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // ── Players list ──
-                  Expanded(
-                    child: joinedPlayers.isEmpty
-                        ? Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.hourglass_empty_rounded,
-                                  color: Colors.white12,
-                                  size: 40,
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  "Waiting for players...",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white24,
-                                    fontSize: 15,
-                                    letterSpacing: 1,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            itemCount: joinedPlayers.length,
-                            itemBuilder: (context, index) {
-                              final player = joinedPlayers[index];
-                              final bool isHost = player == getHostName;
-                              final bool isMe = player == widget.playerName;
-
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 10),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                    horizontal: 16,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isHost
-                                        ? const Color(
-                                            0xFFE53935,
-                                          ).withOpacity(0.08)
-                                        : Colors.white.withOpacity(0.04),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: isHost
-                                          ? const Color(
-                                              0xFFE53935,
-                                            ).withOpacity(0.35)
-                                          : Colors.white12,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
+                        Expanded(
+                          child: joinedPlayers.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      // Avatar circle
-                                      Container(
-                                        width: 38,
-                                        height: 38,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: isHost
-                                              ? const Color(0xFFE53935)
-                                              : Colors.white.withOpacity(0.1),
-                                        ),
-                                        child: Center(
-                                          child: Text(
-                                            player[0].toUpperCase(),
-                                            style: GoogleFonts.bebasNeue(
-                                              color: Colors.white,
-                                              fontSize: 18,
-                                            ),
-                                          ),
+                                      const Text(
+                                        "⏳",
+                                        style: TextStyle(fontSize: 52),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        "Waiting for players...",
+                                        style: GoogleFonts.fredoka(
+                                          color: Colors.black38,
+                                          fontSize: 18,
                                         ),
                                       ),
-                                      const SizedBox(width: 14),
+                                    ],
+                                  ),
+                                )
+                              : ListView.builder(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 20,
+                                  ),
+                                  itemCount: joinedPlayers.length,
+                                  itemBuilder: (context, index) {
+                                    final player = joinedPlayers[index];
+                                    final isPlayerHost = player == getHostName;
+                                    final isMe = player == widget.playerName;
+                                    final ci = index % _avatarBg.length;
 
-                                      // Name + label
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                    return Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: 10,
+                                      ),
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 12,
+                                          horizontal: 14,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(
+                                            18,
+                                          ),
+                                          border: Border.all(
+                                            color: isPlayerHost
+                                                ? _kAccent.withOpacity(0.3)
+                                                : const Color(0xFFEEE0E0),
+                                            width: 1.5,
+                                          ),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(
+                                                0.04,
+                                              ),
+                                              blurRadius: 8,
+                                              offset: const Offset(0, 2),
+                                            ),
+                                          ],
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            if (isPlayerHost)
+                                              _GradBox(
+                                                borderRadius:
+                                                    BorderRadius.circular(23),
+                                                child: SizedBox(
+                                                  width: 46,
+                                                  height: 46,
+                                                  child: Center(
+                                                    child: Text(
+                                                      player[0].toUpperCase(),
+                                                      style:
+                                                          GoogleFonts.fredoka(
+                                                            color: Colors.white,
+                                                            fontSize: 22,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              )
+                                            else
+                                              Container(
+                                                width: 46,
+                                                height: 46,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: _avatarBg[ci],
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    player[0].toUpperCase(),
+                                                    style: GoogleFonts.fredoka(
+                                                      color: _avatarFg[ci],
+                                                      fontSize: 22,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+
+                                            const SizedBox(width: 14),
+
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    player,
+                                                    style: GoogleFonts.fredoka(
+                                                      color: const Color(
+                                                        0xFF1A1A1A,
+                                                      ),
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                                  ),
+                                                  if (isPlayerHost)
+                                                    _GradText(
+                                                      "host 👑",
+                                                      style:
+                                                          GoogleFonts.fredoka(
+                                                            fontSize: 13,
+                                                          ),
+                                                    )
+                                                  else if (isMe)
+                                                    Text(
+                                                      "you 👋",
+                                                      style:
+                                                          GoogleFonts.fredoka(
+                                                            color:
+                                                                Colors.black38,
+                                                            fontSize: 13,
+                                                          ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            if (isPlayerHost)
+                                              _GradBox(
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 5,
+                                                    ),
+                                                child: Text(
+                                                  "HOST",
+                                                  style: GoogleFonts.fredoka(
+                                                    color: Colors.white,
+                                                    fontSize: 12,
+                                                    letterSpacing: 1,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              )
+                                            else
+                                              Container(
+                                                width: 10,
+                                                height: 10,
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: Colors.green.shade400,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                        ),
+
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                          child: isHost
+                              ? AnimatedBuilder(
+                                  animation: _pulseAnimation,
+                                  builder: (context, child) => Transform.scale(
+                                    scale: _pulseAnimation.value,
+                                    child: child,
+                                  ),
+                                  child: GestureDetector(
+                                    onTap: startGame,
+                                    child: _GradBox(
+                                      borderRadius: BorderRadius.circular(20),
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 18,
+                                      ),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color.fromARGB(
+                                            255,
+                                            229,
+                                            53,
+                                            47,
+                                          ).withOpacity(0.45),
+                                          blurRadius: 22,
+                                          offset: const Offset(0, 8),
+                                        ),
+                                      ],
+                                      child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
+                                          const Text(
+                                            "🎮",
+                                            style: TextStyle(fontSize: 20),
+                                          ),
+                                          const SizedBox(width: 10),
                                           Text(
-                                            player,
-                                            style: GoogleFonts.spaceGrotesk(
+                                            "Start Game",
+                                            style: GoogleFonts.fredoka(
                                               color: Colors.white,
-                                              fontSize: 16,
+                                              fontSize: 22,
                                               fontWeight: FontWeight.w600,
                                             ),
                                           ),
-                                          if (isHost)
-                                            Text(
-                                              "HOST",
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: const Color(0xFFE53935),
-                                                fontSize: 10,
-                                                letterSpacing: 2,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            )
-                                          else if (isMe)
-                                            Text(
-                                              "YOU",
-                                              style: GoogleFonts.spaceGrotesk(
-                                                color: Colors.white30,
-                                                fontSize: 10,
-                                                letterSpacing: 2,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                            ),
                                         ],
                                       ),
-
-                                      const Spacer(),
-
-                                      // Status icon
-                                      if (isHost)
-                                        const Icon(
-                                          Icons.star_rounded,
-                                          color: Color(0xFFE53935),
-                                          size: 18,
-                                        )
-                                      else
-                                        Container(
-                                          width: 8,
-                                          height: 8,
-                                          decoration: const BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            color: Colors.greenAccent,
+                                    ),
+                                  ),
+                                )
+                              : Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 18,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: _kAccent.withOpacity(0.3),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      AnimatedBuilder(
+                                        animation: _dotAnimation,
+                                        builder: (context, _) => Opacity(
+                                          opacity: _dotAnimation.value,
+                                          child: const Text(
+                                            "⏳",
+                                            style: TextStyle(fontSize: 18),
                                           ),
                                         ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        "Waiting for host...",
+                                        style: GoogleFonts.fredoka(
+                                          color: Colors.black38,
+                                          fontSize: 18,
+                                        ),
+                                      ),
                                     ],
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  // ── Start Game button — host only ──
-                  if (getHostName == widget.playerName)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
-                      child: AnimatedBuilder(
-                        animation: buttonAnimation,
-                        builder: (context, child) {
-                          final scale = 1 + (buttonAnimation.value * 0.03);
-                          return Transform.scale(scale: scale, child: child);
-                        },
-                        child: GestureDetector(
-                          onTap: () {
-                            if (joinedPlayers.length <= 3) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    "Need at least 4 players to start 👀",
-                                    style: GoogleFonts.spaceGrotesk(),
-                                  ),
-                                  backgroundColor: const Color(0xFFE53935),
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                              );
-                            } else {
-                              startGame();
-                            }
-                          },
-                          child: Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(vertical: 18),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE53935),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(
-                                    0xFFE53935,
-                                  ).withOpacity(0.45),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(
-                                  Icons.play_arrow_rounded,
-                                  color: Colors.white,
-                                  size: 22,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "START GAME",
-                                  style: GoogleFonts.spaceGrotesk(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: 2.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
                         ),
-                      ),
+                      ],
                     ),
-
-                  const SizedBox(height: 28),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-}
-
-// ── Grid background painter ───────────────────────────────────────────────────
-class _GridPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.white.withOpacity(0.03)
-      ..strokeWidth = 1;
-
-    const spacing = 40.0;
-    for (double x = 0; x < size.width; x += spacing) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
-    }
-    for (double y = 0; y < size.height; y += spacing) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_) => false;
 }
