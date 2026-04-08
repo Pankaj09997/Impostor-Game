@@ -66,7 +66,8 @@
 
 ```bash
 # Clone the repo
-git clone [clone repo](https://github.com/Pankaj09997/impostorgame.git)
+git clone https://github.com/Pankaj09997/impostorgame.git
+
 cd impostorgame
 
 # Install dependencies
