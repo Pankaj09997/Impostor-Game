@@ -44,7 +44,6 @@ class _NamePageState extends State<NamePage> with TickerProviderStateMixin {
       ),
     );
 
-    // Pulse for button
     _buttonController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 950),
@@ -54,7 +53,6 @@ class _NamePageState extends State<NamePage> with TickerProviderStateMixin {
     );
     _buttonController.repeat(reverse: true);
 
-    // Staggered entry
     _entryController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),

@@ -227,7 +227,6 @@ class _CodePageState extends State<CodePage>
 
               const SizedBox(height: 40),
 
-              // ── Code input ──
               FadeTransition(
                 opacity: _inputFade,
                 child: SlideTransition(
@@ -300,7 +299,6 @@ class _CodePageState extends State<CodePage>
                           ),
                         ),
 
-                        // ── Inline error ──
                         ValueListenableBuilder<TextEditingValue>(
                           valueListenable: _codeController,
                           builder: (context, value, _) {
@@ -345,7 +343,6 @@ class _CodePageState extends State<CodePage>
 
               const Spacer(),
 
-              // ── Join button ──
               FadeTransition(
                 opacity: _btnFade,
                 child: SlideTransition(
