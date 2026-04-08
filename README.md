@@ -66,7 +66,7 @@
 
 ```bash
 # Clone the repo
-git clone (https://github.com/Pankaj09997/impostorgame.git)
+git clone [clone repo](https://github.com/Pankaj09997/impostorgame.git)
 cd impostorgame
 
 # Install dependencies
@@ -96,23 +96,6 @@ flutter run
 
 <br/>
 
-## 📁 Project Structure
-
-```
-lib/
-├── core/               # App-wide constants, theme, utilities
-├── data/               # Firebase data sources & repositories
-├── domain/             # Entities, use cases, repository contracts
-├── presentation/
-│   ├── lobby/          # Lobby screen (create/join room)
-│   ├── chamber/        # Waiting room / player list
-│   ├── game/           # Scratch reveal, secret word screen
-│   ├── vote/           # Voting screen with timer
-│   └── result/         # Game result screen
-└── main.dart
-```
-
-<br/>
 
 ## 📦 Version History
 
