@@ -47,7 +47,6 @@
 | Layer | Technology |
 |-------|-----------|
 | **Framework** | Flutter 3.35.5 (Dart 3.9.2) |
-| **State Management** | BLoC / Clean Architecture |
 | **Realtime Backend** | Firebase Realtime Database |
 | **Authentication** | Anonymous / Name-based session |
 | **Platform** | Android (Play Store) |
@@ -67,7 +66,7 @@
 
 ```bash
 # Clone the repo
-git clone https://github.com/Pankaj09997/impostorgame.git
+git clone [https://github.com/Pankaj09997/impostorgame.git]
 cd impostorgame
 
 # Install dependencies
