@@ -66,7 +66,7 @@
 
 ```bash
 # Clone the repo
-git clone [https://github.com/Pankaj09997/impostorgame.git]
+git clone (https://github.com/Pankaj09997/impostorgame.git)
 cd impostorgame
 
 # Install dependencies
@@ -161,10 +161,5 @@ Feel free to open an issue or submit a pull request.
 
 <br/>
 
-## 📄 License
 
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
 
----
-
-<p align="center">Made with ❤️ and Flutter in Nepal 🇳🇵</p>
