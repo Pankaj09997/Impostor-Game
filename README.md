@@ -1,4 +1,4 @@
-# 🕵️ Impostor — Lie. Blend in. Survive.
+# 🕵️ J'accuse — Lie. Blend in. Survive.
 
 > A real-time multiplayer social deduction game built with Flutter & Firebase.  
 > Get a secret word, talk around it, and find the one player who got a *different* word.
@@ -139,7 +139,7 @@ Feel free to open an issue or submit a pull request.
 
 **Pankaj Pandey**  
 - 🌐 [pankajpandey.com.np](https://pankajpandey.com.np)  
-- 💼 [LinkedIn](https://linkedin.com/in/pankaj-pandey)  
+- 💼 [LinkedIn]([https://linkedin.com/in/pankaj-pandey](https://www.linkedin.com/in/pankaj-pandey-87b157255/))  
 - 🐙 [GitHub @Pankaj09997](https://github.com/Pankaj09997)  
 - 📧 pankajpandey.p18@gmail.com
 
