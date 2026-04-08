@@ -9,7 +9,7 @@
 
 | Lobby | Room | Countdown | Name Entry |
 |-------|------|-----------|------------|
-| ![Lobby](assets/ProjectDemo/HomePage.jpeg.jpeg) | ![Chamber](assets/ProjectDemo/TheChamber.jpeg) | ![Countdown](assets/ProjectDemo/Timer.jpeg) | ![Name](assets/ProjectDemo/NamePage.jpeg) |
+| ![Lobby](assets/ProjectDemo/HomePage.jpeg) | ![Chamber](assets/ProjectDemo/TheChamber.jpeg) | ![Countdown](assets/ProjectDemo/Timer.jpeg) | ![Name](assets/ProjectDemo/NamePage.jpeg) |
 
 | Scratch Reveal | Secret Word | Voting | Results |
 |----------------|-------------|--------|---------|
